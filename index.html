@@ -1,80 +1,27 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>文化寻脉 · AI 多模态研学助手</title>
-  <style>
-    :root{--ink:#17231e;--muted:#68736d;--paper:#f3efe6;--card:#fffdf8;--red:#b44735;--jade:#1e6c59;--gold:#c39142;--line:#ded8cb;--shadow:0 18px 60px rgba(34,45,38,.12)}
-    *{box-sizing:border-box} body{margin:0;color:var(--ink);font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:radial-gradient(circle at 80% -10%,#d9eadf 0,transparent 32%),var(--paper)}
-    button,input,textarea{font:inherit} button{cursor:pointer}.shell{min-height:100vh;display:grid;grid-template-columns:244px 1fr}
-    aside{padding:28px 22px;background:#183f35;color:#f8f5ec;position:sticky;top:0;height:100vh}.brand{display:flex;gap:12px;align-items:center;margin-bottom:34px}.seal{display:grid;place-items:center;width:40px;height:40px;border:1px solid #f1d8a3;border-radius:12px;color:#f1d8a3;font-family:serif;font-weight:700}.brand b{display:block;font-size:18px;letter-spacing:2px}.brand small{opacity:.62}.nav{display:grid;gap:8px}.nav button{border:0;background:transparent;color:#dce7df;text-align:left;padding:12px 14px;border-radius:12px}.nav button.active,.nav button:hover{background:rgba(255,255,255,.12);color:white}.nav i{font-style:normal;display:inline-block;width:28px}.aside-note{position:absolute;left:22px;right:22px;bottom:26px;padding:14px;border:1px solid rgba(255,255,255,.14);border-radius:14px;font-size:12px;line-height:1.65;color:#cfdbd4}
-    main{padding:28px 4.5vw 70px;max-width:1500px;width:100%}.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:34px}.crumb{color:var(--muted);font-size:14px}.account{display:flex;align-items:center;gap:10px}.doc-link{color:var(--jade);text-decoration:none;padding:7px 11px;border:1px solid #bfd0c6;border-radius:9px;background:#f8fbf9}.doc-link:hover{background:#e8f0eb}.avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#d6e4da;color:var(--jade);font-weight:700}
-    .hero{display:grid;grid-template-columns:1.25fr .75fr;gap:26px;align-items:end;margin-bottom:26px}.eyebrow{color:var(--red);font-weight:700;letter-spacing:2px}.hero h1{font-family:"STSong","Songti SC",serif;font-size:clamp(32px,4vw,54px);line-height:1.15;margin:8px 0 12px}.hero p{color:var(--muted);line-height:1.8;max-width:680px}.statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.stat{padding:16px;border:1px solid var(--line);border-radius:16px;background:rgba(255,253,248,.66)}.stat b{display:block;font-size:22px;font-family:serif}.stat small{color:var(--muted)}
-    .workspace{background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);overflow:hidden}.modes{display:flex;gap:6px;padding:12px 14px;border-bottom:1px solid var(--line);overflow:auto}.mode{border:0;background:transparent;padding:9px 13px;border-radius:10px;color:var(--muted);white-space:nowrap}.mode.active{background:#e8f0eb;color:var(--jade);font-weight:700}
-    .ask{padding:22px}.ask textarea{width:100%;min-height:104px;resize:vertical;border:0;outline:0;background:transparent;color:var(--ink);font-size:20px;line-height:1.6}.ask-footer{display:flex;justify-content:space-between;gap:14px;align-items:center}.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{border:1px solid var(--line);background:white;border-radius:99px;padding:7px 11px;color:var(--muted);font-size:13px}.primary{border:0;border-radius:13px;background:var(--red);color:white;padding:12px 20px;font-weight:700;box-shadow:0 7px 18px rgba(180,71,53,.25)}
-    .examples{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0 34px}.example{border:1px solid var(--line);border-radius:15px;padding:15px;background:rgba(255,253,248,.66);text-align:left;color:var(--ink)}.example:hover{border-color:#aebfb4;transform:translateY(-2px)}.example small{display:block;color:var(--muted);margin-top:6px}
-    .result{display:none;animation:up .45s ease}.result.show{display:block}@keyframes up{from{opacity:0;transform:translateY(12px)}}.section-head{display:flex;justify-content:space-between;align-items:end;margin:34px 0 15px}.section-head h2{margin:0;font-family:serif;font-size:26px}.section-head span{font-size:13px;color:var(--muted)}
-    .summary-grid{display:grid;grid-template-columns:1.5fr .8fr;gap:16px}.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px}.answer{line-height:1.9}.answer h3{font-family:serif;font-size:22px;margin:0 0 10px}.cite{display:inline-flex;align-items:center;gap:4px;border:0;border-radius:7px;padding:2px 7px;color:var(--jade);background:#e7f0eb;font-size:12px;vertical-align:middle}.confidence{padding:11px 13px;border-radius:12px;background:#f6f1e7;color:#785c2e;font-size:13px;margin-top:15px}
-    .relations{display:grid;gap:10px}.relation{padding:12px;border-left:3px solid var(--gold);background:#faf6ec;border-radius:0 10px 10px 0}.relation b{display:block;margin-bottom:4px}.relation small{color:var(--muted);line-height:1.5}
-    .clips{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.clip{background:var(--card);border:1px solid var(--line);border-radius:17px;overflow:hidden}.thumb{height:120px;position:relative;padding:14px;color:white;background:linear-gradient(135deg,#304e44,#9b6a4c)}.clip:nth-child(2) .thumb{background:linear-gradient(135deg,#745142,#c69655)}.clip:nth-child(3) .thumb{background:linear-gradient(135deg,#314a61,#617f78)}.play{position:absolute;right:12px;bottom:12px;width:38px;height:38px;border:0;border-radius:50%;background:rgba(255,255,255,.9);color:var(--red)}.time{display:inline-block;padding:4px 8px;background:rgba(0,0,0,.28);border-radius:7px;font-size:12px}.clip-body{padding:15px}.clip-body h4{margin:0 0 7px}.clip-body p{font-size:13px;color:var(--muted);line-height:1.6;min-height:42px}.clip-actions{display:flex;justify-content:space-between;align-items:center}.ghost{border:1px solid var(--line);background:white;border-radius:9px;padding:7px 10px;color:var(--jade)}
-    .studybar{display:flex;align-items:center;gap:14px;padding:16px 18px;background:#193f35;color:white;border-radius:17px}.studybar .progress{height:6px;flex:1;background:rgba(255,255,255,.18);border-radius:99px;overflow:hidden}.progress i{display:block;width:38%;height:100%;background:#f0c878}.studybar button{border:0;border-radius:9px;background:#f0c878;color:#183f35;padding:8px 12px;font-weight:700}
-    .toast{position:fixed;right:28px;bottom:28px;padding:13px 17px;border-radius:12px;background:#17231e;color:white;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none}.toast.show{opacity:1;transform:none}
-    .loading{display:none;text-align:center;padding:28px;color:var(--muted)}.loading.show{display:block}.dots span{display:inline-block;width:7px;height:7px;margin:0 3px;border-radius:50%;background:var(--jade);animation:pulse 1s infinite alternate}.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}@keyframes pulse{to{opacity:.2;transform:translateY(-5px)}}
-    @media(max-width:900px){.shell{display:block}aside{height:auto;position:relative;padding:16px 20px}.brand{margin:0}.nav,.aside-note{display:none}main{padding:24px 18px 60px}.hero,.summary-grid{grid-template-columns:1fr}.examples,.clips{grid-template-columns:1fr}.statrow{margin-top:10px}.topbar{display:none}.ask-footer{align-items:flex-end}.chips{max-width:70%}}
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>文化寻脉｜联图云 AI 研学创作工作台</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<div class="shell">
-  <aside>
-    <div class="brand"><div class="seal">文脉</div><div><b>文化寻脉</b><small>AI 研学助手 · MVP</small></div></div>
-    <div class="nav">
-      <button class="active"><i>⌕</i>智能研学</button><button><i>⌘</i>文化图谱</button><button><i>▶</i>我的片单</button><button><i>▤</i>研学卡片</button><button><i>♡</i>收藏资源</button>
-    </div>
-    <div class="aside-note">本演示使用模拟馆藏数据，重点验证“提问—证据—原片—成果”产品闭环，不代表平台真实检索结果。</div>
-  </aside>
-  <main>
-    <div class="topbar"><div class="crumb">联图云 · 中华民族文化 / 智能研学</div><div class="account"><a class="doc-link" href="./docs/联图云中华民族文化_AI多模态研学助手_PRD.md" target="_blank" rel="noopener">查看 PRD</a><span>校园用户</span><div class="avatar">研</div></div></div>
-    <section class="hero">
-      <div><div class="eyebrow">从一个问题，找到文化的来路</div><h1>让每一次文化探索<br/>都有原片可循</h1><p>基于权威民族文化音视频，AI 帮你发现关联、定位片段、建立学习路径。关键结论均可回到来源核验。</p></div>
-      <div class="statrow"><div class="stat"><b>5 类</b><small>核心文化专题</small></div><div class="stat"><b>10万+</b><small>分钟音视频</small></div><div class="stat"><b>句级</b><small>证据可追溯</small></div></div>
-    </section>
-    <section class="workspace">
-      <div class="modes"><button class="mode active">为课程作业找材料</button><button class="mode">了解一个文化主题</button><button class="mode">比较两个文化现象</button><button class="mode">社会实践行前准备</button></div>
-      <div class="ask"><textarea id="question">比较不同地区端午习俗中的共同文化意涵，帮我准备一份 8 分钟课堂展示。</textarea><div class="ask-footer"><div class="chips"><button class="chip">本科通识课</button><button class="chip">不限地区</button><button class="chip">8 分钟</button></div><button id="search" class="primary">开始寻脉 →</button></div></div>
-      <div id="loading" class="loading"><div class="dots"><span></span><span></span><span></span></div><p>正在理解任务、检索馆藏并对齐证据…</p></div>
-    </section>
-    <div class="examples"><button class="example">民族乐器如何相互影响？<small>跨民族 · 音乐比较</small></button><button class="example">云南传统技艺调研准备<small>社会实践 · 行前研学</small></button><button class="example">木卡姆 10 分钟课堂片单<small>课程展示 · 智能片单</small></button></div>
-
-    <section id="result" class="result">
-      <div class="section-head"><h2>研学理解框架</h2><span>已检索 26 项馆藏 · 引用 7 个证据片段</span></div>
-      <div class="summary-grid">
-        <div class="panel answer"><h3>共同的文化内核：祈愿、纪念与共同体</h3><p>不同地区的端午习俗虽在仪式形态上各有侧重，但可从三个层面理解其共同意涵：以时令仪式祈求安康、以历史叙事寄托纪念、以集体活动强化社区联结。<button class="cite">证据 01 · 02</button></p><p>南方水乡的龙舟竞渡更突出集体协作与水域生活经验；部分北方地区则更多通过佩饰、饮食和节令礼俗表达避疫纳吉。两者并非截然分割，而是共享“顺应时序、护佑生命”的文化逻辑。<button class="cite">证据 03 · 05</button></p><div class="confidence">证据状态：馆藏可支持总体框架；“地区差异成因”属于多材料归纳，建议播放原片后再用于正式作业。</div></div>
-        <div class="panel"><h3 style="margin-top:0">文化关联</h3><div class="relations"><div class="relation"><b>时令节俗 ↔ 生命护佑</b><small>艾草、香囊、饮食与环境适应形成关联。</small></div><div class="relation"><b>龙舟竞渡 ↔ 社区协作</b><small>仪式、竞技与地方水域生活共同塑造集体记忆。</small></div><div class="relation"><b>历史叙事 ↔ 地方认同</b><small>不同地区对人物纪念与故事表达存在差异。</small></div></div></div>
-      </div>
-
-      <div class="section-head"><h2>关键证据片段</h2><span>点击时间码可模拟跳转原片</span></div>
-      <div class="clips">
-        <article class="clip"><div class="thumb"><span class="time">03:18—05:06</span><button class="play">▶</button></div><div class="clip-body"><h4>水乡端午与龙舟仪式</h4><p>呈现竞渡筹备、祭仪与社区协作的完整过程。</p><div class="clip-actions"><small>民族民俗音像出版社</small><button class="ghost add">＋ 片单</button></div></div></article>
-        <article class="clip"><div class="thumb"><span class="time">11:42—13:10</span><button class="play">▶</button></div><div class="clip-body"><h4>端午节令中的香囊与艾草</h4><p>解释佩饰、草药使用与时令生活之间的联系。</p><div class="clip-actions"><small>传统文化专题库</small><button class="ghost add">＋ 片单</button></div></div></article>
-        <article class="clip"><div class="thumb"><span class="time">07:25—09:02</span><button class="play">▶</button></div><div class="clip-body"><h4>节日叙事与地方记忆</h4><p>比较不同地域对端午人物故事的讲述方式。</p><div class="clip-actions"><small>地域文化专题库</small><button class="ghost add">＋ 片单</button></div></div></article>
-      </div>
-      <div class="section-head"><h2>8 分钟课堂片单</h2><span>3 个片段 · 结构可编辑</span></div>
-      <div class="studybar"><b>01</b><span>祈愿安康</span><b>02</b><span>共同体仪式</span><b>03</b><span>地方记忆</span><div class="progress"><i></i></div><span>约 8:06</span><button id="card">生成研学卡片</button></div>
-    </section>
-  </main>
-</div>
-<div id="toast" class="toast">已加入 8 分钟课堂片单</div>
-<script>
-  const result=document.querySelector('#result'), loading=document.querySelector('#loading'), toast=document.querySelector('#toast'), q=document.querySelector('#question');
-  function notify(msg){toast.textContent=msg;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1800)}
-  function run(){result.classList.remove('show');loading.classList.add('show');setTimeout(()=>{loading.classList.remove('show');result.classList.add('show');result.scrollIntoView({behavior:'smooth',block:'start'})},1100)}
-  document.querySelector('#search').onclick=run;
-  document.querySelectorAll('.example').forEach((el,i)=>el.onclick=()=>{q.value=[...document.querySelectorAll('.example')][i].childNodes[0].textContent.trim();run()});
-  document.querySelectorAll('.mode').forEach(el=>el.onclick=()=>{document.querySelectorAll('.mode').forEach(x=>x.classList.remove('active'));el.classList.add('active')});
-  document.querySelectorAll('.add').forEach(el=>el.onclick=()=>{el.textContent='✓ 已加入';notify('已加入 8 分钟课堂片单')});
-  document.querySelectorAll('.play').forEach(el=>el.onclick=()=>notify('正在从标注时间码播放原片（演示）'));
-  document.querySelector('#card').onclick=()=>notify('研学卡片已生成，可编辑并导出');
-</script>
+  <div id="root"></div>
+  <script src="https://sf3-scmcdn-cn.feishucdn.com/obj/feishu-static/miaoda/coding-unpkg-sdk/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+  <script src="https://sf3-scmcdn-cn.feishucdn.com/obj/feishu-static/miaoda/coding-unpkg-sdk/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+  <script src="https://sf3-scmcdn-cn.feishucdn.com/obj/feishu-static/miaoda/coding-unpkg-sdk/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel">
+    window.TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "density": "舒展",
+      "evidenceThread": true,
+      "demoStrategy": "从零生成"
+    }/*EDITMODE-END*/;
+  </script>
+  <script type="text/babel" src="data.jsx"></script>
+  <script type="text/babel" src="components.jsx"></script>
+  <script type="text/babel" src="screens.jsx"></script>
+  <script type="text/babel" src="app.jsx"></script>
 </body>
 </html>
