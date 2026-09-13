@@ -87,7 +87,8 @@ function App(){
     runTask("outline",()=>Promise.resolve(buildOutline(task,resources)),next=>{
       setOutline(next);
       setScreen("workspace");
-      notify(`素材化大纲已生成，证据覆盖率${outlineCoverage(next)}%`);
+      const quality=calculateQualityMetrics(task,next,resources);
+      notify(`素材化大纲已生成：主题直接相关${quality.directRelevanceRate}%，章节观点支撑${quality.claimSupportRate}%`);
     });
   };
 
@@ -163,7 +164,7 @@ function App(){
     {preview&&<PreviewDrawer resource={preview} onClose={()=>setPreview(null)} onToggle={toggleResource}
       onTimeChange={(a,b)=>notify(`时间码已记录：${a}–${b}`)}/>}
     {generateOpen&&<GenerateModal defaultType={task.type.includes("论文")?"课程论文":"PPT"}
-      coverage={outlineCoverage(outline)} onClose={()=>setGenerateOpen(false)} onGenerate={startGenerate}/>}
+      quality={calculateQualityMetrics(task,outline,resources)} onClose={()=>setGenerateOpen(false)} onGenerate={startGenerate}/>}
     {feedbackOpen&&<FeedbackModal artifact={currentArtifact} onClose={()=>setFeedbackOpen(false)} notify={notify}/>}
     {loading&&<LoadingOverlay title={loadingCopy.title} detail={loadingCopy.detail} progress={loading.progress}/>}
     <Toasts items={toasts}/>

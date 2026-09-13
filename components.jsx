@@ -93,10 +93,10 @@ function ResourceCard({resource,onPreview,onToggle}){
   return <article className={"resource-card "+(resource.selected?"selected":"")}>
     <ResourceThumb resource={resource}/>
     <div className="resource-main">
-      <div className="chip-row"><Chip active>{resource.source}</Chip><Chip>{resource.rights}</Chip></div>
+      <div className="chip-row"><Chip active>{resource.source}</Chip><Chip>{resource.relevanceLevel||"待核验"}</Chip><Chip>{resource.rights}</Chip></div>
       <h3>{resource.title}</h3><p>{resource.desc}</p>
       <div className="chip-row">{resource.tags.map(t=><Chip key={t}>{t}</Chip>)}</div>
-      <div className="meta-line"><span>资源编号 {resource.id}</span><span>相关度 {resource.relevance}%</span><span>{resource.download}</span></div>
+      <div className="meta-line"><span>资源编号 {resource.id}</span><span>主题相关度 {resource.relevance}%</span><span>{resource.download}</span></div>
     </div>
     <div className="resource-actions">
       <Button small icon="play" onClick={()=>onPreview(resource)}>预览证据</Button>

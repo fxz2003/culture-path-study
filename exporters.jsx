@@ -67,6 +67,49 @@ function addPptHeader(slide,section){
   slide.addText(section,{x:9.2,y:.32,w:3.45,h:.3,fontFace:"Microsoft YaHei",fontSize:12,color:"6B7773",align:"right",margin:0});
 }
 
+async function imageUrlToData(url){
+  if(!url)return "";
+  const configuredProxy=window.CULTURE_PATH_MEDIA_PROXY;
+  const fallbackProxy=configuredProxy
+    ?`${configuredProxy}${configuredProxy.includes("?")?"&":"?"}url=${encodeURIComponent(url)}`
+    :`https://images.weserv.nl/?url=${encodeURIComponent(url.replace(/^https?:\/\//,""))}&output=jpg`;
+  const sameOrigin=new URL(url,window.location.href).origin===window.location.origin;
+  const candidates=sameOrigin?[url]:[fallbackProxy];
+  for(const candidate of candidates){
+    try{
+      const response=await fetch(candidate,{mode:"cors",credentials:"omit"});
+      if(!response.ok)throw new Error(`HTTP ${response.status}`);
+      const blob=await response.blob();
+      if(!blob.type.startsWith("image/"))throw new Error("返回内容不是图片");
+      return await new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=()=>resolve(reader.result);
+        reader.onerror=reject;
+        reader.readAsDataURL(blob);
+      });
+    }catch(error){
+      if(candidate===fallbackProxy)console.warn("素材图读取失败",url,error);
+    }
+  }
+  return "";
+}
+
+function pptText(value,max=220){
+  const text=String(value||"").replace(/\s+/g," ").trim();
+  return text.length>max?`${text.slice(0,max-1)}…`:text;
+}
+
+function addEvidenceImage(slide,resource,data,position){
+  if(!resource||!data)return false;
+  const {x,y,w,h}=position;
+  slide.addImage({
+    data,x,y,w,h,sizing:{type:"cover",w,h},
+    hyperlink:{url:resource.detailUrl,tooltip:`打开联图云：${resource.title}`},
+    altText:`${resource.title}，来源：${resource.source}`
+  });
+  return true;
+}
+
 async function writeCompatiblePptx(pptx,filename){
   const raw=await pptx.write({outputType:"blob"});
   if(!window.JSZip){
@@ -104,6 +147,12 @@ async function downloadPptxArtifact(artifact,resources){
   if(!window.PptxGenJS)throw new Error("PPT生成组件尚未加载，请刷新页面后重试");
   const evidence=artifactResources(artifact,resources);
   const sourcePool=artifact.evidence?.length?artifact.evidence:resources;
+  const isMusic=/音乐|民歌|歌曲|情歌|山歌|海菜腔/.test(artifact.title);
+  const researchQuestion=isMusic
+    ?"云南少数民族音乐呈现出哪些形态，它如何进入生活并被记录、传播与传承？"
+    :`围绕“${artifact.title}”，联图云馆藏能够支持哪些关键结论？`;
+  const imageEntries=await Promise.all(evidence.map(async resource=>[resource.id,await imageUrlToData(resource.coverUrl)]));
+  const imageMap=Object.fromEntries(imageEntries);
   const pptx=new PptxGenJS();
   pptx.layout="LAYOUT_WIDE";
   pptx.author="联图云·文化寻脉功能MVP";
@@ -115,35 +164,54 @@ async function downloadPptxArtifact(artifact,resources){
 
   let slide=pptx.addSlide();
   slide.background={color:"F3F0E8"};
-  slide.addText("文化寻脉 · 课程研学成果",{x:.78,y:.78,w:7,h:.4,fontSize:18,bold:true,color:"235F53",margin:0});
-  slide.addText(artifact.title,{x:.78,y:1.7,w:11.6,h:1.55,fontSize:42,bold:true,color:"182621",margin:0,fit:"shrink"});
-  slide.addText(`${artifact.task.type} · ${artifact.task.duration} · ${artifact.task.level}`,{x:.8,y:3.65,w:9.4,h:.48,fontSize:18,color:"596762",margin:0});
-  slide.addText(`${evidence.length}项联图云资源   证据覆盖率${artifact.coverage}%   ${artifact.version}`,{x:.8,y:5.85,w:10.5,h:.42,fontSize:17,color:"235F53",margin:0});
-  slide.addText("标题、正文与引用均可编辑。资源权限以联图云账号实际展示为准。",{x:.8,y:6.4,w:11.2,h:.36,fontSize:14,color:"7A6C58",margin:0});
+  const coverResource=evidence.find(resource=>imageMap[resource.id]);
+  const hasCover=addEvidenceImage(slide,coverResource,imageMap[coverResource?.id],{x:8.35,y:0,w:4.98,h:7.5});
+  const coverWidth=hasCover?6.85:11.6;
+  slide.addText("文化寻脉 · 课程研学成果",{x:.78,y:.72,w:coverWidth,h:.4,fontSize:18,bold:true,color:"235F53",margin:0});
+  slide.addText(artifact.title,{x:.78,y:1.62,w:coverWidth,h:1.8,fontSize:40,bold:true,color:"182621",margin:0,fit:"shrink",breakLine:false});
+  slide.addText("研究问题",{x:.8,y:3.72,w:1.2,h:.34,fontSize:15,bold:true,color:"235F53",margin:0});
+  slide.addText(researchQuestion,{x:.8,y:4.14,w:coverWidth,h:1.04,fontSize:22,bold:true,color:"34443E",margin:0,fit:"shrink"});
+  slide.addText(`${artifact.task.type} · ${artifact.task.duration} · ${artifact.task.level}`,{x:.8,y:5.62,w:coverWidth,h:.42,fontSize:17,color:"596762",margin:0});
+  slide.addText(`${evidence.length}项站内资源 · 章节支撑率${artifact.quality?.claimSupportRate??artifact.coverage}% · ${artifact.version}`,{x:.8,y:6.12,w:coverWidth,h:.38,fontSize:16,color:"235F53",margin:0});
+  slide.addText(hasCover?"封面图来自联图云，点击图片打开原始素材。":"资源权限以联图云账号实际展示为准。",{x:.8,y:6.62,w:coverWidth,h:.3,fontSize:12,color:"7A6C58",margin:0});
+  slide.addNotes(`封面证据：${coverResource?.title||"无"}\n${coverResource?.detailUrl||""}`);
 
   artifact.outline.forEach((chapter,index)=>{
     const items=chapter.resourceIds.map(id=>sourcePool.find(r=>r.id===id)).filter(Boolean);
+    const visual=items.find(resource=>imageMap[resource.id]);
     const page=pptx.addSlide();
     page.background={color:"FFFFFF"};
     addPptHeader(page,`章节 ${chapter.no}`);
-    page.addText(chapter.title,{x:.65,y:.9,w:11.7,h:.72,fontSize:32,bold:true,color:"182621",margin:0,fit:"shrink"});
-    page.addText(chapter.goal,{x:.68,y:1.78,w:11.4,h:.62,fontSize:18,color:"4C5B56",margin:0,fit:"shrink"});
-    const summaries=items.slice(0,3).map((r,i)=>`${i+1}. ${r.title}\n${r.aiSummary.split("；")[0]}`);
-    page.addText(summaries.join("\n\n"),{x:.7,y:2.7,w:7.65,h:3.75,fontSize:17,color:"26332F",margin:.03,fit:"shrink",valign:"top"});
-    page.addText("本章证据",{x:8.9,y:2.72,w:3.35,h:.4,fontSize:18,bold:true,color:"235F53",margin:0});
-    page.addText(items.map(r=>`[${r.type}] ${r.title}\n${r.source} · ${r.id}`).join("\n\n")||"尚无证据",{x:8.9,y:3.28,w:3.65,h:2.95,fontSize:15,color:"34443E",margin:0,fit:"shrink",valign:"top"});
+    page.addText(chapter.title,{x:.65,y:.82,w:6.25,h:.72,fontSize:31,bold:true,color:"182621",margin:0,fit:"shrink"});
+    page.addText(pptText(chapter.takeaway||chapter.goal,110),{x:.68,y:1.68,w:6.15,h:1.25,fontSize:23,bold:true,color:"34443E",margin:0,fit:"shrink",valign:"mid"});
+    page.addText("站内证据要点",{x:.7,y:3.18,w:2.6,h:.34,fontSize:16,bold:true,color:"235F53",margin:0});
+    const points=(chapter.points?.length?chapter.points:items.map(r=>`《${r.title}》：${r.excerpt}`)).slice(0,2);
+    page.addText(points.map((point,i)=>`${i+1}. ${pptText(point,78)}`).join("\n\n"),{x:.7,y:3.62,w:6.15,h:2.58,fontSize:17,color:"26332F",margin:0,fit:"shrink",breakLine:false,valign:"top"});
+    const imageAdded=addEvidenceImage(page,visual,imageMap[visual?.id],{x:7.35,y:1.2,w:5.28,h:4.55});
+    page.addText(imageAdded
+      ?`${visual.title}\n${visual.source} · 资源编号 ${visual.id}\n${visual.type==="视频"?"视频封面已嵌入，点击图片在联图云播放":"图片已嵌入，点击图片查看联图云原始记录"}`
+      :"本章素材封面暂不可读取，请按资源编号进入联图云核验。",
+      {x:7.35,y:5.93,w:5.28,h:.64,fontSize:12.5,color:"53645E",margin:0,fit:"shrink",valign:"top"}
+    );
+    page.addText(`论证边界：${pptText(chapter.goal,90)}`,{x:.7,y:6.52,w:9.8,h:.32,fontSize:12.5,color:"7A6C58",margin:0,fit:"shrink"});
     page.addText(`第${index+2}页`,{x:11.2,y:6.72,w:1.3,h:.25,fontSize:11,color:"7B8984",align:"right",margin:0});
+    page.addNotes(items.map(resource=>`${resource.title}\n${resource.detailUrl}\n原始简介：${resource.excerpt}`).join("\n\n"));
   });
 
   const citationGroups=[];
-  for(let i=0;i<evidence.length;i+=4)citationGroups.push(evidence.slice(i,i+4));
+  for(let i=0;i<evidence.length;i+=8)citationGroups.push(evidence.slice(i,i+8));
   (citationGroups.length?citationGroups:[[]]).forEach((group,groupIndex)=>{
     slide=pptx.addSlide();
     slide.background={color:"F7F8F7"};
     addPptHeader(slide,"引用与使用边界");
     slide.addText("引用清单与权限说明",{x:.65,y:.9,w:9.2,h:.7,fontSize:32,bold:true,color:"182621",margin:0});
-    slide.addText(group.map((r,i)=>`${groupIndex*4+i+1}. ${r.title}\n${r.source} · 资源编号 ${r.id}\n${r.detailUrl}`).join("\n\n"),{x:.7,y:1.82,w:11.85,h:4.65,fontSize:15,color:"26332F",margin:.03,fit:"shrink",valign:"top"});
-    slide.addText("平台账号决定播放、下载和嵌入权限。MVP摘要不等同于平台原始内容。",{x:.72,y:6.63,w:11.4,h:.32,fontSize:13,color:"9A4C3A",margin:0});
+    const left=group.slice(0,4);
+    const right=group.slice(4,8);
+    [left,right].forEach((column,columnIndex)=>{
+      slide.addText(column.map((r,i)=>`${groupIndex*8+columnIndex*4+i+1}. ${pptText(r.title,36)}\n${r.source} · ${r.id}`).join("\n\n"),{x:.72+columnIndex*6.12,y:1.83,w:5.7,h:4.72,fontSize:15.5,color:"26332F",margin:0,fit:"shrink",valign:"top"});
+    });
+    slide.addText("已把封面/图片素材写入PPT；视频播放仍受平台权限控制，通过封面链接回到联图云。AI归纳不等同于平台原文。",{x:.72,y:6.58,w:11.65,h:.42,fontSize:13,color:"9A4C3A",margin:0,fit:"shrink"});
+    slide.addNotes(group.map(resource=>`${resource.title}\n${resource.detailUrl}`).join("\n\n"));
   });
   await writeCompatiblePptx(pptx,`${safeFilename(artifact.title)}_文化寻脉_${artifact.version}.pptx`);
 }

@@ -57,17 +57,20 @@ function SearchScreen({resources,onToggle,onPreview,onNext,query,searchMeta,onRe
   const [keyword,setKeyword]=React.useState("");
   const [onlyPreview,setOnlyPreview]=React.useState(false);
   const shown=resources.filter(r=>media.includes(r.type)&&(!keyword||r.title.includes(keyword)||r.tags.some(t=>t.includes(keyword))||r.desc.includes(keyword))&&(!onlyPreview||r.coverUrl));
-  const selected=resources.filter(r=>r.selected).length;
+  const selectedResources=resources.filter(r=>r.selected);
+  const selected=selectedResources.length;
+  const directSelected=selectedResources.filter(r=>r.directlyRelevant).length;
+  const directRate=selected?Math.round(directSelected/selected*100):0;
   return <main className="page" data-screen-label="02 站内检索">
     <Stepper step={2}/>
     <PageTitle eyebrow="INSTITUTION SEARCH" title="已找到可回到原站核验的馆藏记录"
       subtitle={"检索主题“"+(searchMeta.query||extractThemeTitle(query))+"” · "+searchMeta.label+" · "+searchMeta.searchedAt}
-      actions={<><Button icon="search" onClick={onRetry}>重新实时检索</Button><Button variant="primary" icon="spark" disabled={selected<3} onClick={onNext}>生成素材化大纲</Button></>}/>
-    <div className="metric-strip"><div className="metric"><b>{searchMeta.total}</b><span>平台命中总量</span></div><div className="metric"><b>{presentTypes.length}</b><span>本页媒介类型</span></div><div className="metric"><b>{Math.min(96,55+selected*7)}%</b><span>当前证据充分度</span></div><div className="metric"><b>{selected}</b><span>已选入大纲</span></div></div>
-    {searchMeta.mode==="live"?<Notice>当前结果来自联图云实时接口。资源编号和详情链接均保留；播放、下载与嵌入权限以登录后的平台展示为准。</Notice>:<Notice warn>实时接口暂不可用，当前显示2026-09-13已核验的联图云快照样本，仅用于保证MVP流程可继续测试。</Notice>}
+      actions={<><Button icon="search" onClick={onRetry}>重新实时检索</Button><Button variant="primary" icon="spark" disabled={directSelected<3} onClick={onNext}>生成素材化大纲</Button></>}/>
+    <div className="metric-strip"><div className="metric"><b>{searchMeta.total}</b><span>平台命中总量</span></div><div className="metric"><b>{searchMeta.directCount||resources.filter(r=>r.directlyRelevant).length}</b><span>主题直接相关</span></div><div className="metric"><b>{directRate}%</b><span>已选直接相关率</span></div><div className="metric"><b>{selected}</b><span>已选入大纲</span></div></div>
+    {searchMeta.mode==="live"?<Notice>当前结果由“{(searchMeta.queries||[searchMeta.query]).join("、")}”多词检索后按主题相关性重排。资源编号和详情链接均保留；播放、下载与嵌入权限以登录后的平台展示为准。</Notice>:<Notice warn>实时接口暂不可用，当前显示已核验的联图云快照样本，仅用于保证MVP流程可继续测试。</Notice>}
     <div className="search-layout" style={{marginTop:16}}>
       <aside className="card filter-panel">
-        <div className="card-title"><div><h2>筛选资源</h2><p>当前加载前{resources.length}项高相关记录。</p></div></div>
+        <div className="card-title"><div><h2>筛选资源</h2><p>当前加载{resources.length}项重排结果，默认仅勾选直接相关素材。</p></div></div>
         <div className="filter-group"><h3>媒介类型</h3>{allTypes.map(t=><label className="filter-option" key={t}><span>{t}{presentTypes.includes(t)?"":"（本页无）"}</span><input type="checkbox" checked={media.includes(t)} onChange={()=>setMedia(v=>v.includes(t)?v.filter(x=>x!==t):[...v,t])}/></label>)}</div>
         <div className="filter-group"><h3>预览条件</h3><label className="filter-option"><span>仅看有封面的记录</span><input type="checkbox" checked={onlyPreview} onChange={e=>setOnlyPreview(e.target.checked)}/></label></div>
         <div className="filter-group"><h3>站外补充</h3><label className="filter-option disabled"><span>本轮MVP不混入站外素材</span><input type="checkbox" disabled/></label><p className="help">先验证联图云特色资源能否独立支持课程作业。</p></div>
@@ -76,7 +79,7 @@ function SearchScreen({resources,onToggle,onPreview,onNext,query,searchMeta,onRe
         <div className="search-toolbar"><div className="search-input"><Icon name="search"/><input className="input" placeholder="在当前结果中搜索标题、简介或标签" value={keyword} onChange={e=>setKeyword(e.target.value)}/></div><div className="chip-row"><Chip active>相关性优先</Chip><Chip>来源可回溯</Chip><Chip>权限待核验</Chip></div></div>
         <div className="resource-list">{shown.map(r=><ResourceCard key={r.id} resource={r} onPreview={onPreview} onToggle={onToggle}/>)}</div>
         {shown.length===0&&<div className="card empty">没有符合当前筛选条件的资源，请恢复媒介类型或清空搜索词。</div>}
-        <div className="sticky-bottom"><div><b>已选 {selected} 项素材</b><div style={{fontSize:12,color:"rgba(255,255,255,.7)"}}>至少选择3项；生成前可逐项打开联图云原始详情核验。</div></div><Button icon="spark" disabled={selected<3} onClick={onNext}>生成素材化大纲</Button></div>
+        <div className="sticky-bottom"><div><b>已选 {selected} 项素材 · 直接相关 {directSelected} 项</b><div style={{fontSize:12,color:"rgba(255,255,255,.7)"}}>至少保留3项直接相关证据；生成前可逐项打开联图云原始详情核验。</div></div><Button icon="spark" disabled={directSelected<3} onClick={onNext}>生成素材化大纲</Button></div>
       </section>
     </div>
   </main>;
@@ -92,13 +95,16 @@ function WorkspaceScreen({resources,outline,task,onToggle,onPreview,onGenerate,o
   const chapterResources=(chapter?.resourceIds||[]).map(id=>resources.find(r=>r.id===id)).filter(Boolean);
   const selected=resources.filter(r=>r.selected);
   const coverage=outlineCoverage(effective);
+  const quality=calculateQualityMetrics(task,effective,resources);
   const currentEvidence=chapterResources[0]||selected[0];
   const missing=effective.filter(c=>!c.resourceIds.length);
   const counts=selected.reduce((acc,r)=>{acc[r.type]=(acc[r.type]||0)+1;return acc},{});
   return <main className="page" data-screen-label="03 素材化大纲工作台">
     <Stepper step={3}/>
     <PageTitle eyebrow="EVIDENCE-BACKED OUTLINE" title="素材化大纲工作台" subtitle={"围绕“"+extractThemeTitle(task.topic)+"”逐章确认论点与真实站内证据。"}
-      actions={<><Button icon="download" onClick={onDownloadPack}>下载真实素材包</Button><Button variant="primary" icon="spark" disabled={coverage<75} onClick={onGenerate}>生成成果</Button></>}/>
+      actions={<><Button icon="download" onClick={onDownloadPack}>下载真实素材包</Button><Button variant="primary" icon="spark" disabled={!quality.ready} onClick={onGenerate}>生成成果</Button></>}/>
+    <div className="metric-strip"><div className="metric"><b>{quality.chapterCoverage}%</b><span>章节证据覆盖</span></div><div className="metric"><b>{quality.directRelevanceRate}%</b><span>主题直接相关</span></div><div className="metric"><b>{quality.claimSupportRate}%</b><span>章节观点支撑</span></div><div className="metric"><b>{quality.visualEmbedRate}%</b><span>视觉素材可嵌入</span></div></div>
+    <div style={{margin:"12px 0 16px"}}>{quality.ready?<Notice>PPT质量门禁已通过：每章有观点、有站内证据且有可嵌入素材。视频将以真实封面嵌入，并可点击回到联图云播放。</Notice>:<Notice warn>暂未达到生成门槛，请优先补充直接相关且有封面的素材，并确保每章至少有一项证据。</Notice>}</div>
     <div className="workspace">
       <aside className="card outline-panel">
         <div className="card-title"><div><h2>章节大纲</h2><p>证据覆盖 {coverage}%</p></div><Chip seal={missing.length>0}>{missing.length?"缺口"+missing.length+"章":"已覆盖"}</Chip></div>
@@ -125,7 +131,7 @@ function WorkspaceScreen({resources,outline,task,onToggle,onPreview,onGenerate,o
         {missing.length>0&&<><div className="divider"></div><Notice warn>{missing.map(c=>c.title).join("、")}仍无证据，建议补齐后再生成正式成果。</Notice></>}
       </aside>
     </div>
-    <div className="sticky-bottom"><div><b>已选 {selected.length} 项　·　视频 {counts["视频"]||0}　·　图片 {counts["图片"]||0}　·　音频 {counts["音频"]||0}</b><div style={{fontSize:12,color:"rgba(255,255,255,.7)"}}>证据覆盖 {coverage}% · 引用均保留联图云详情链接</div></div><div style={{display:"flex",gap:8}}><Button icon="download" onClick={onDownloadPack}>下载素材包</Button><Button icon="spark" disabled={coverage<75} onClick={onGenerate}>生成成果</Button></div></div>
+    <div className="sticky-bottom"><div><b>已选 {selected.length} 项　·　视频 {counts["视频"]||0}　·　图片 {counts["图片"]||0}　·　音频 {counts["音频"]||0}</b><div style={{fontSize:12,color:"rgba(255,255,255,.7)"}}>章节覆盖 {quality.chapterCoverage}% · 直接相关 {quality.directRelevanceRate}% · 视觉可嵌入 {quality.visualEmbedRate}%</div></div><div style={{display:"flex",gap:8}}><Button icon="download" onClick={onDownloadPack}>下载素材包</Button><Button icon="spark" disabled={!quality.ready} onClick={onGenerate}>生成成果</Button></div></div>
   </main>;
 }
 
@@ -137,7 +143,8 @@ function ResultScreen({artifact,resources,onLibrary,onFeedback,onDownload,onDown
   const sourcePool=artifact.evidence||resources;
   const currentItems=(current.resourceIds||[]).map(id=>sourcePool.find(r=>r.id===id)).filter(Boolean);
   const evidence=artifact.evidence||resources.filter(r=>artifact.resourceIds.includes(r.id));
-  const passed=artifact.coverage===100&&evidence.length>=3;
+  const quality=artifact.quality||calculateQualityMetrics(artifact.task,artifact.outline,evidence.map(r=>({...r,selected:true})));
+  const passed=Boolean(quality.ready);
   return <main className="page" data-screen-label="04 成果生成与下载">
     <Stepper step={4}/>
     <PageTitle eyebrow="GENERATED ARTIFACT" title="成果已生成，可立即下载验证" subtitle={artifact.type+" · "+artifact.pages+"页/章节 · "+artifact.version+" · 保存于 "+artifact.updated}
@@ -146,15 +153,15 @@ function ResultScreen({artifact,resources,onLibrary,onFeedback,onDownload,onDown
       <section className="card">
         <div className="card-title"><div><h2>成果结构预览</h2><p>{artifact.title}</p></div><div className="chip-row"><Chip active>已保存</Chip><Chip>{artifact.layout}</Chip></div></div>
         <div className="slide-rail">{slides.map((s,i)=><button key={s.title+i} className={"slide-thumb "+(slide===i?"active":"")} onClick={()=>setSlide(i)}><span className="slide-no">{String(i+1).padStart(2,"0")}</span><b>{s.title}</b><span className="help">{i===0?"任务与证据概况":"绑定"+s.resourceIds.length+"项证据"}</span></button>)}</div>
-        <div className="slide-preview"><div className="slide-visual"></div><div className="slide-copy"><div className="eyebrow">PAGE {String(slide+1).padStart(2,"0")}</div><h2>{current.title}</h2><p>{current.goal}</p>{currentItems.length?<ul>{currentItems.slice(0,3).map(r=><li key={r.id}>{r.title}（{r.type}）</li>)}</ul>:<ul><li>{artifact.task.type} · {artifact.task.duration}</li><li>{evidence.length}项联图云证据</li><li>证据覆盖率 {artifact.coverage}%</li></ul>}<div className="citation">{currentItems.length?"引用："+currentItems.map(r=>r.id).join("、"):"引用与权限说明保留在成果末页"}</div></div></div>
+        <div className="slide-preview"><div className="slide-visual">{(currentItems[0]||evidence[0])&&<ResourceThumb resource={currentItems[0]||evidence[0]}/>}</div><div className="slide-copy"><div className="eyebrow">PAGE {String(slide+1).padStart(2,"0")}</div><h2>{current.title}</h2><p>{current.takeaway||current.goal}</p>{currentItems.length?<ul>{(current.points||currentItems.map(r=>r.title)).slice(0,3).map((point,i)=><li key={i}>{point}</li>)}</ul>:<ul><li>{artifact.task.type} · {artifact.task.duration}</li><li>{evidence.length}项联图云证据</li><li>章节观点支撑率 {quality.claimSupportRate}%</li></ul>}<div className="citation">{currentItems.length?"引用："+currentItems.map(r=>r.id).join("、"):"引用与权限说明保留在成果末页"}</div></div></div>
       </section>
       <aside className="card">
-        <div className="card-title"><div><h2>生成校验</h2><p>{passed?"核心校验已通过。":"仍有项目需要补齐。"}</p></div><Chip active={passed}>{passed?"4/4":"3/4"}</Chip></div>
+        <div className="card-title"><div><h2>生成校验</h2><p>{passed?"PPT内容与素材校验已通过。":"仍有项目需要补齐。"}</p></div><Chip active={passed}>{passed?"4/4":"待补齐"}</Chip></div>
         <div className="check-list">{[
           ["文件结构",artifact.type==="课程论文"?"可编辑Word稿":"可编辑PPTX"],
-          ["证据映射","章节覆盖率"+artifact.coverage+"%"],
-          ["引用回溯",evidence.length+"项资源均保留原始链接"],
-          ["版权边界","媒体文件不越权复制，权限回到原站核验"]
+          ["主题相关","已选素材直接相关率"+quality.directRelevanceRate+"%"],
+          ["论证支撑","章节观点支撑率"+quality.claimSupportRate+"%"],
+          ["素材呈现","视觉素材可嵌入率"+quality.visualEmbedRate+"%；视频封面可点击回到原站"]
         ].map(pair=><div className="check-item" key={pair[0]}><span className="check-mark"><Icon name="check" size={14}/></span><div><b>{pair[0]}</b><span>{pair[1]}</span></div></div>)}</div>
         <div className="divider"></div><Notice>后台可在获得真实使用反馈后，将高质量成果标记为模板候选；用户侧无需执行模板保存操作。</Notice>
         <div className="result-actions"><Button variant="primary" icon="download" onClick={onDownload}>{artifact.type==="课程论文"?"下载可编辑论文稿":"下载可编辑PPTX"}</Button><Button icon="download" onClick={onDownloadPack}>下载素材包ZIP</Button><Button className="full" icon="feedback" onClick={onFeedback}>提交测试反馈</Button></div>
@@ -170,17 +177,18 @@ function LibraryScreen({artifacts,onOpen,onCreate,onDownload}){
   </main>;
 }
 
-function GenerateModal({onClose,onGenerate,defaultType="PPT",coverage=0}){
+function GenerateModal({onClose,onGenerate,defaultType="PPT",quality}){
   const [type,setType]=React.useState(defaultType);
   const [layout,setLayout]=React.useState("馆藏叙事");
   const [pages,setPages]=React.useState(6);
-  return <Modal title="设置成果生成方式" onClose={onClose} actions={<><Button onClick={onClose}>返回大纲</Button><Button variant="primary" icon="spark" onClick={()=>onGenerate({type,layout,pages})}>开始生成</Button></>}>
+  const ready=Boolean(quality?.ready);
+  return <Modal title="设置成果生成方式" onClose={onClose} actions={<><Button onClick={onClose}>返回大纲</Button><Button variant="primary" icon="spark" disabled={!ready} onClick={()=>onGenerate({type,layout,pages})}>开始生成</Button></>}>
     <div className="form-grid">
       <div className="field span-12"><label>成果类型</label><div className="segmented">{["PPT","课程论文"].map(v=><button className={"segment "+(type===v?"active":"")} onClick={()=>setType(v)} key={v}>{v}</button>)}</div></div>
       <div className="field span-6"><label>基础版式</label><select className="select" value={layout} onChange={e=>setLayout(e.target.value)}><option>馆藏叙事</option><option>研究汇报</option><option>图文简报</option></select></div>
       <div className="field span-6"><label>{type==="PPT"?"预计页数":"预计章节数"}</label><input className="input" type="number" min="4" max="30" value={pages} onChange={e=>setPages(Number(e.target.value))}/></div>
     </div>
-    <div style={{marginTop:16}}>{coverage===100?<Notice>全部正式章节均已绑定证据，可以生成并下载测试。</Notice>:<Notice warn>当前证据覆盖率{coverage}%。MVP允许继续生成，但会在成果中保留缺口提示。</Notice>}</div>
+    <div style={{marginTop:16}}>{ready?<Notice>质量门禁已通过：章节覆盖{quality.chapterCoverage}%、主题直接相关{quality.directRelevanceRate}%、观点支撑{quality.claimSupportRate}%、视觉素材可嵌入{quality.visualEmbedRate}%。</Notice>:<Notice warn>当前质量门禁未通过，请返回大纲补充直接相关且有封面的站内证据。</Notice>}</div>
   </Modal>;
 }
 
