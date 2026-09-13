@@ -83,14 +83,14 @@ function LoadingOverlay({title,progress,detail}){
 function ResourceThumb({resource,large=false}){
   const cls=resource.type==="音频"?"audio":resource.type==="文献"||resource.type==="口述"?"doc":"";
   return <div className={large?"hero-preview":"resource-thumb"}>
-    <div className={`thumb-art ${cls}`}></div>
+    {resource.coverUrl?<img className="thumb-image" src={resource.coverUrl} alt={resource.title} loading="lazy" onError={e=>{e.currentTarget.style.display="none"}}/>:<div className={"thumb-art "+cls}></div>}
     {!large&&<><span className="media-badge">{resource.type}</span><span className="time-badge">{resource.time}</span></>}
     {large&&(resource.type==="音频"||resource.type==="视频")&&<div className="wave"></div>}
   </div>;
 }
 
 function ResourceCard({resource,onPreview,onToggle}){
-  return <article className={`resource-card ${resource.selected?"selected":""}`}>
+  return <article className={"resource-card "+(resource.selected?"selected":"")}>
     <ResourceThumb resource={resource}/>
     <div className="resource-main">
       <div className="chip-row"><Chip active>{resource.source}</Chip><Chip>{resource.rights}</Chip></div>
@@ -100,30 +100,31 @@ function ResourceCard({resource,onPreview,onToggle}){
     </div>
     <div className="resource-actions">
       <Button small icon="play" onClick={()=>onPreview(resource)}>预览证据</Button>
+      <Button small onClick={()=>window.open(resource.detailUrl,"_blank","noopener")}>原始详情</Button>
       <Button small variant={resource.selected?"secondary":"primary"} icon={resource.selected?"check":null} onClick={()=>onToggle(resource.id)}>{resource.selected?"已选素材":"加入大纲"}</Button>
     </div>
   </article>;
 }
 
 function PreviewDrawer({resource,onClose,onToggle,onTimeChange}){
-  const [tab,setTab]=React.useState("原文/字幕");
-  const [start,setStart]=React.useState("03:20");
-  const [end,setEnd]=React.useState("04:42");
+  const [tab,setTab]=React.useState("平台原始简介");
+  const [start,setStart]=React.useState("00:00");
+  const [end,setEnd]=React.useState(resource.time&&resource.time.includes(":")?resource.time:"00:30");
   if(!resource)return null;
   return <><div className="drawer-backdrop" onClick={onClose}></div><aside className="drawer" aria-modal="true" role="dialog">
     <div className="drawer-head"><div><div className="eyebrow">EVIDENCE PREVIEW</div><h2>{resource.title}</h2><p className="subhead">{resource.source} · {resource.id}</p></div><button className="icon-btn" onClick={onClose} aria-label="关闭"><Icon name="close"/></button></div>
     <ResourceThumb resource={resource} large/>
     <div className="chip-row"><Chip active>站内馆藏</Chip><Chip>{resource.rights}</Chip><Chip>{resource.download}</Chip></div>
-    <div className="timeline"><b>命中片段</b><div className="timeline-bar"><span></span></div><div className="time-fields"><input className="input" value={start} onChange={e=>setStart(e.target.value)}/><input className="input" value={end} onChange={e=>setEnd(e.target.value)}/></div><div className="actions" style={{marginTop:8}}><Button small onClick={()=>onTimeChange(start,end)}>保存时间码</Button></div></div>
-    <div className="evidence-tabs"><button className={`segment ${tab==="原文/字幕"?"active":""}`} onClick={()=>setTab("原文/字幕")}>原文/字幕</button><button className={`segment ${tab==="AI摘要"?"active":""}`} onClick={()=>setTab("AI摘要")}>AI摘要</button></div>
-    {tab==="原文/字幕"?<div className="evidence-quote">“这段唱腔主要在节庆场景中使用，由年长歌者带领青年共同演唱。学习发生在共同实践中，而不是脱离生活的单独训练。”</div>:<div className="evidence-quote">该证据说明民族音乐的传承具有场景性和共同参与特征，可支持“社区传承机制”相关论点。此段为AI摘要，不等同于原始字幕。</div>}
-    <div className="divider"></div><h3>来源与权限</h3><div className="rights-grid"><span>收藏机构</span><b>{resource.source}</b><span>使用范围</span><b>{resource.rights}</b><span>导出方式</span><b>{resource.download}</b><span>相关理由</span><b>直接支持“{resource.chapter}”章节</b></div>
-    <div className="actions"><Button onClick={onClose}>返回</Button><Button variant={resource.selected?"secondary":"primary"} onClick={()=>{onToggle(resource.id);onClose()}}>{resource.selected?"移出已选":"加入已选素材"}</Button></div>
+    {resource.type!=="图片"&&<div className="timeline"><b>本次引用时间码</b><div className="timeline-bar"><span></span></div><div className="time-fields"><input className="input" value={start} onChange={e=>setStart(e.target.value)}/><input className="input" value={end} onChange={e=>setEnd(e.target.value)}/></div><div className="actions" style={{marginTop:8}}><Button small onClick={()=>onTimeChange(start,end)}>记录时间码</Button></div></div>}
+    <div className="evidence-tabs"><button className={"segment "+(tab==="平台原始简介"?"active":"")} onClick={()=>setTab("平台原始简介")}>平台原始简介</button><button className={"segment "+(tab==="MVP摘要"?"active":"")} onClick={()=>setTab("MVP摘要")}>MVP摘要</button></div>
+    <div className="evidence-quote">{tab==="平台原始简介"?resource.excerpt:resource.aiSummary}</div>
+    <div className="divider"></div><h3>来源与权限</h3><div className="rights-grid"><span>来源</span><b>{resource.source}</b><span>年份</span><b>{resource.publishYear}</b><span>使用范围</span><b>{resource.rights}</b><span>记录类型</span><b>{resource.recordType}</b></div>
+    <div className="actions"><Button onClick={()=>window.open(resource.detailUrl,"_blank","noopener")}>打开联图云原始页</Button><Button variant={resource.selected?"secondary":"primary"} onClick={()=>{onToggle(resource.id);onClose()}}>{resource.selected?"移出已选":"加入已选素材"}</Button></div>
   </aside></>;
 }
 
 function Modal({title,children,onClose,actions}){
-  return <div className="modal-backdrop" role="dialog" aria-modal="true"><div className="modal"><div className="drawer-head"><div><div className="eyebrow">PROTOTYPE ACTION</div><h2>{title}</h2></div><button className="icon-btn" onClick={onClose} aria-label="关闭"><Icon name="close"/></button></div><div className="divider"></div>{children}{actions&&<div className="actions">{actions}</div>}</div></div>;
+  return <div className="modal-backdrop" role="dialog" aria-modal="true"><div className="modal"><div className="drawer-head"><div><div className="eyebrow">FUNCTIONAL MVP</div><h2>{title}</h2></div><button className="icon-btn" onClick={onClose} aria-label="关闭"><Icon name="close"/></button></div><div className="divider"></div>{children}{actions&&<div className="actions">{actions}</div>}</div></div>;
 }
 
 Object.assign(window,{Icon,Button,AppHeader,Stepper,PageTitle,Chip,Notice,Toasts,LoadingOverlay,ResourceThumb,ResourceCard,PreviewDrawer,Modal});

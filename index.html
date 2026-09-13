@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>文化寻脉｜联图云 AI 研学创作工作台</title>
+  <meta name="description" content="基于联图云真实馆藏检索、证据化大纲与可编辑成果导出的文化研学功能MVP" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23235f53'/%3E%3Cpath d='M18 17h28v7H25v8h18v7H25v8h21v7H18z' fill='%23f3f0e8'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -11,6 +13,8 @@
   <script src="https://sf3-scmcdn-cn.feishucdn.com/obj/feishu-static/miaoda/coding-unpkg-sdk/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
   <script src="https://sf3-scmcdn-cn.feishucdn.com/obj/feishu-static/miaoda/coding-unpkg-sdk/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
   <script src="https://sf3-scmcdn-cn.feishucdn.com/obj/feishu-static/miaoda/coding-unpkg-sdk/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@4.0.1/dist/pptxgen.bundle.js" crossorigin="anonymous"></script>
   <script type="text/babel" src="tweaks-panel.jsx"></script>
   <script type="text/babel">
     window.TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
@@ -19,6 +23,8 @@
       "demoStrategy": "从零生成"
     }/*EDITMODE-END*/;
   </script>
+  <script type="text/babel" src="services.jsx"></script>
+  <script type="text/babel" src="exporters.jsx"></script>
   <script type="text/babel" src="data.jsx"></script>
   <script type="text/babel" src="components.jsx"></script>
   <script type="text/babel" src="screens.jsx"></script>
